@@ -8,14 +8,27 @@ function TaskForm({ onTaskCreated }) {
     priority: "Low",
     dueDate: "",
   });
+  const [errors, setErrors] = useState({});
+
+  const validate = () => {
+    const errs = {};
+    if (!form.title.trim()) errs.title = "Title is required";
+    if (!form.description.trim()) errs.description = "Description is required";
+    if (!form.dueDate) errs.dueDate = "Due date is required";
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   const handleSubmit = async () => {
+    if (!validate()) return;
     try {
+      setErrors({});
       const res = await api.post("/tasks", form);
       onTaskCreated(res.data.task);
       setForm({ title: "", description: "", priority: "Low", dueDate: "" });
     } catch (err) {
-      console.log(err);
+      const msg = err.response?.data?.message || "Failed to create task";
+      setErrors({ server: msg });
     }
   };
 
@@ -29,17 +42,20 @@ function TaskForm({ onTaskCreated }) {
       <p style={styles.eyebrow}>New Task</p>
       <h2 style={styles.heading}>Create Task</h2>
 
+      {errors.server && <p style={styles.errorText}>{errors.server}</p>}
+
       <div style={styles.row}>
         <div style={{ flex: 2 }}>
-          <label style={styles.label}>Title</label>
+          <label style={styles.label}>Title *</label>
           <input
             className="form-input"
             type="text"
             placeholder="Task title"
-            style={styles.input}
+            style={{ ...styles.input, borderColor: errors.title ? "#fecaca" : "#ddd" }}
             value={form.title}
             onChange={(e) => setForm({ ...form, title: e.target.value })}
           />
+          {errors.title && <p style={styles.fieldError}>{errors.title}</p>}
         </div>
         <div style={{ flex: 1 }}>
           <label style={styles.label}>Priority</label>
@@ -56,27 +72,29 @@ function TaskForm({ onTaskCreated }) {
       </div>
 
       <div>
-        <label style={styles.label}>Description</label>
+        <label style={styles.label}>Description *</label>
         <input
           className="form-input"
           type="text"
-          placeholder="Short description (optional)"
-          style={styles.input}
+          placeholder="Short description"
+          style={{ ...styles.input, borderColor: errors.description ? "#fecaca" : "#ddd" }}
           value={form.description}
           onChange={(e) => setForm({ ...form, description: e.target.value })}
         />
+        {errors.description && <p style={styles.fieldError}>{errors.description}</p>}
       </div>
 
       <div style={styles.row}>
         <div style={{ flex: 1 }}>
-          <label style={styles.label}>Due Date</label>
+          <label style={styles.label}>Due Date *</label>
           <input
             className="form-input"
             type="date"
-            style={styles.input}
+            style={{ ...styles.input, borderColor: errors.dueDate ? "#fecaca" : "#ddd" }}
             value={form.dueDate}
             onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
           />
+          {errors.dueDate && <p style={styles.fieldError}>{errors.dueDate}</p>}
         </div>
         <div style={{ flex: 1, display: "flex", alignItems: "flex-end" }}>
           <button className="add-btn" onClick={handleSubmit} style={styles.btn}>
@@ -151,6 +169,20 @@ const styles = {
     fontFamily: "'DM Sans', sans-serif",
     letterSpacing: "0.04em",
     transition: "background 0.2s",
+  },
+  errorText: {
+    fontSize: 12,
+    color: "#c0392b",
+    background: "#fef2f2",
+    border: "1px solid #fecaca",
+    padding: "8px 12px",
+    borderRadius: 3,
+    marginBottom: 14,
+  },
+  fieldError: {
+    fontSize: 11,
+    color: "#c0392b",
+    marginTop: 4,
   },
 };
 
